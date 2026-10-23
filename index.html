@@ -80,7 +80,7 @@ const readStorage=key=>{try{return JSON.parse(localStorage.getItem(key))}catch(e
 const writeStorage=(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value));return true}catch(err){return false}};
 let state=(()=>{for(const key of [STORE,PREVIOUS]){const v=readStorage(key);if(v&&v.terms&&v.active&&Array.isArray(v.terms[v.active])&&Array.isArray(v.instructors))return v;}const old=readStorage(LEGACY);const e=old&&Array.isArray(old.events)?old.events:events;return {terms:{'Fall 2026':JSON.parse(JSON.stringify(e))},active:'Fall 2026',instructors:old?.instructors||defInst}})();
 function syncTerm(){state.events=state.terms[state.active];}
-function save(){state.terms[state.active]=state.events;writeStorage(STORE,{schemaVersion:1,module:'dmi-scheduler',terms:state.terms,active:state.active,instructors:state.instructors})}
+function save(){state.terms[state.active]=state.events;writeStorage(STORE,{schemaVersion:1,module:'dmi-scheduler',terms:state.terms,active:state.active,instructors:state.instructors,catalogTitlesSynced:!!state.catalogTitlesSynced})}
 function termUI(){el('term').innerHTML=Object.keys(state.terms).sort((a,b)=>{let y=x=>+(x.match(/\d{4}/)||[0])[0];return y(b)-y(a)||(b.includes('Fall')?1:0)-(a.includes('Fall')?1:0)}).map(x=>`<option value="${escapeHtml(x)}" ${x===state.active?'selected':''}>${escapeHtml(x)}</option>`).join('')}
 // Repair legacy Mammography assignments with a missing instructor record.
 for(const entries of Object.values(state.terms))for(const entry of entries){
@@ -93,7 +93,7 @@ for(const entries of Object.values(state.terms))for(const entry of entries){
 // One-time official CCSF catalog title synchronization, across all existing terms.
 // Do not change room, time, instructor, component, or cohort assignments.
 let catalogMigration=false;
-for(const entries of Object.values(state.terms)){
+if(!state.catalogTitlesSynced)for(const entries of Object.values(state.terms)){
  if(!Array.isArray(entries))continue;
  for(const entry of entries){
   const code=String(entry.code||'').trim().toUpperCase();
@@ -106,6 +106,7 @@ for(const entries of Object.values(state.terms)){
   }
  }
 }
+if(!state.catalogTitlesSynced){state.catalogTitlesSynced=true;catalogMigration=true;}
 const cohortMigration=assignSemesterCohorts(state.terms);
 syncTerm();
 if(cohortMigration||catalogMigration)save();
@@ -193,6 +194,6 @@ function manageInstructors(){
  el('saveIns').onclick=()=>{const updated=state.instructors.map((x,i)=>({...x,name:el('in'+i).value.trim()||'Instructor '+(i+1),color:el('co'+i).value}));for(let n=0;n<newlyAdded;n++){let i=state.instructors.length+n;let name=el('in'+i).value.trim();if(!name){toast('Please enter a name for every new instructor');el('in'+i).focus();return}updated.push({id:'i'+(Date.now().toString(36))+'_'+i,name,color:el('co'+i).value})}state.instructors=updated;save();hideModal();render();toast('Instructors updated')};
 }
 el('instBtn').onclick=manageInstructors;
-el('expBtn').onclick=()=>{save();let blob=new Blob([JSON.stringify({schemaVersion:1,module:'dmi-scheduler',terms:state.terms,active:state.active,instructors:state.instructors},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='dmi-schedule-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(url)};el('impBtn').onclick=()=>el('file').click();el('file').onchange=async(e)=>{let file=e.target.files[0];if(!file)return;try{let data=JSON.parse(await file.text());if(!Array.isArray(data.instructors)||!(data.terms&&data.active)||!data.events&&!data.terms)throw Error('Invalid planner backup');if(confirm('Replace the current schedule with this imported file?')){state=data;assignSemesterCohorts(state.terms);syncTerm();save();termUI();render();toast('Schedule imported')}}catch(e){toast('Could not import: '+e.message)}e.target.value=''};
+el('expBtn').onclick=()=>{save();let blob=new Blob([JSON.stringify({schemaVersion:1,module:'dmi-scheduler',terms:state.terms,active:state.active,instructors:state.instructors},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='dmi-schedule-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(url)};el('impBtn').onclick=()=>el('file').click();el('file').onchange=async(e)=>{let file=e.target.files[0];if(!file)return;try{let data=JSON.parse(await file.text());if(!Array.isArray(data.instructors)||!(data.terms&&data.active)||!data.events&&!data.terms)throw Error('Invalid planner backup');if(confirm('Replace the current schedule with this imported file?')){state=data;state.catalogTitlesSynced=true;assignSemesterCohorts(state.terms);syncTerm();save();termUI();render();toast('Schedule imported')}}catch(e){toast('Could not import: '+e.message)}e.target.value=''};
 render();
 </script></body></html>
