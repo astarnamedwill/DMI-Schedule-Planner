@@ -90,6 +90,27 @@ for(const entries of Object.values(state.terms))for(const entry of entries){
   else state.instructors.push({id:entry.ins,name:'Aziza Fassil',color:'#A8DDD4'});
  }
 }
+const COURSE_TITLES={
+ '49':'Introduction to Radiologic Technology',
+ '50A':'Introduction to Medical Radiography',
+ '50B':'Radiologic Physics and Equipment',
+ '51A':'Radiographic Anatomy and Positioning',
+ '51B':'Radiographic Exposure Factors',
+ '52':'Patient Care in Radiologic Technology',
+ '54':'Vascular and Interventional Procedures',
+ '56':'Radiographic Pathology',
+ '57':'Multiplanar Imaging in Radiologic Sciences',
+ '62':'Clinical Education in DMI I',
+ '63':'Intermediate Diagnostic Procedures',
+ '64':'Clinical Education in DMI II',
+ '65':'Computed Tomography',
+ '66':'Clinical Education in DMI III',
+ '68':'Clinical Education in DMI IV',
+ '69':'Clinical Education Internship Summer Bridge',
+ '70':'Radiation Protection',
+ '72':'Mammography',
+ '100':'Registry Examination and Career Preparation'
+};
 // One-time official CCSF catalog title synchronization, across all existing terms.
 // Do not change room, time, instructor, component, or cohort assignments.
 let catalogMigration=false;
@@ -141,27 +162,7 @@ function warnBeforeCommit(draft,onOverride,onEdit){
 }
 
 // Course titles are stored separately from meeting components. Legacy labels remain recoverable.
-const COURSE_TITLES={
- '49':'Introduction to Radiologic Technology',
- '50A':'Introduction to Medical Radiography',
- '50B':'Radiologic Physics and Equipment',
- '51A':'Radiographic Anatomy and Positioning',
- '51B':'Radiographic Exposure Factors',
- '52':'Patient Care in Radiologic Technology',
- '54':'Vascular and Interventional Procedures',
- '56':'Radiographic Pathology',
- '57':'Multiplanar Imaging in Radiologic Sciences',
- '62':'Clinical Education in DMI I',
- '63':'Intermediate Diagnostic Procedures',
- '64':'Clinical Education in DMI II',
- '65':'Computed Tomography',
- '66':'Clinical Education in DMI III',
- '68':'Clinical Education in DMI IV',
- '69':'Clinical Education Internship Summer Bridge',
- '70':'Radiation Protection',
- '72':'Mammography',
- '100':'Registry Examination and Career Preparation'
-};
+
 function componentOf(e){if(['Lecture','Lab','Clinical'].includes(e.component))return e.component;return e.kind==='block'||['Clinical','Internship'].includes(e.type)?'Clinical':e.type==='Lab'?'Lab':'Lecture'}
 function courseTitleOf(e){if(e.courseTitle)return e.courseTitle;let label=String(e.title||'').replace(/^DMI\s*[\w/]+\s*[–—-]\s*/i,'').replace(/^DMI\s*[\w/]+\s*·\s*/i,'').trim();if(label && !['Lecture','Lab','Clinical'].includes(label))return label;return COURSE_TITLES[String(e.code||'').toUpperCase()]||(['Lecture','Lab'].includes(e.type)?'':String(e.type||''))}
 function displayLabel(e){const number=String(e.code||'').trim();const title=courseTitleOf(e).trim();return number?'DMI '+number+(title?' - '+title:''):title||'Untitled course'}
