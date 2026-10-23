@@ -90,9 +90,25 @@ for(const entries of Object.values(state.terms))for(const entry of entries){
   else state.instructors.push({id:entry.ins,name:'Aziza Fassil',color:'#A8DDD4'});
  }
 }
+// One-time official CCSF catalog title synchronization, across all existing terms.
+// Do not change room, time, instructor, component, or cohort assignments.
+let catalogMigration=false;
+for(const entries of Object.values(state.terms)){
+ if(!Array.isArray(entries))continue;
+ for(const entry of entries){
+  const code=String(entry.code||'').trim().toUpperCase();
+  const official=COURSE_TITLES[code];
+  if(!official)continue; // retain custom non-course blocks (e.g. IV Skills Lab and 62/64 combined blocks).
+  if(entry.courseTitle!==official || entry.title!=='DMI '+code+' - '+official){
+   entry.courseTitle=official;
+   entry.title='DMI '+code+' - '+official;
+   catalogMigration=true;
+  }
+ }
+}
 const cohortMigration=assignSemesterCohorts(state.terms);
 syncTerm();
-if(cohortMigration)save();
+if(cohortMigration||catalogMigration)save();
 el('term').onchange=()=>{save();state.active=el('term').value;syncTerm();save();render()};
 el('newTerm').onclick=()=>{let name=prompt('New term name (for example, Spring 2027):');if(!name)return;name=name.trim();if(!name)return;if(state.terms[name]){toast('That term already exists');return}let copy=confirm('Copy the CURRENT term as a starting point?\nOK = copy classes and blocks\nCancel = create a blank term');save();state.terms[name]=copy?JSON.parse(JSON.stringify(state.events)):[];state.active=name;syncTerm();save();termUI();render();toast('Created '+name)};
 el('renameTerm').onclick=()=>{let name=prompt('Rename '+state.active+' to:',state.active);if(!name||!name.trim()||name.trim()===state.active)return;name=name.trim();if(state.terms[name]){toast('A term with this name exists');return}state.terms[name]=state.events;delete state.terms[state.active];state.active=name;syncTerm();save();termUI();render()};
@@ -124,7 +140,27 @@ function warnBeforeCommit(draft,onOverride,onEdit){
 }
 
 // Course titles are stored separately from meeting components. Legacy labels remain recoverable.
-const COURSE_TITLES={'51A':'Radiographic Anatomy and Positioning'};
+const COURSE_TITLES={
+ '49':'Introduction to Radiologic Technology',
+ '50A':'Introduction to Medical Radiography',
+ '50B':'Radiologic Physics and Equipment',
+ '51A':'Radiographic Anatomy and Positioning',
+ '51B':'Radiographic Exposure Factors',
+ '52':'Patient Care in Radiologic Technology',
+ '54':'Vascular and Interventional Procedures',
+ '56':'Radiographic Pathology',
+ '57':'Multiplanar Imaging in Radiologic Sciences',
+ '62':'Clinical Education in DMI I',
+ '63':'Intermediate Diagnostic Procedures',
+ '64':'Clinical Education in DMI II',
+ '65':'Computed Tomography',
+ '66':'Clinical Education in DMI III',
+ '68':'Clinical Education in DMI IV',
+ '69':'Clinical Education Internship Summer Bridge',
+ '70':'Radiation Protection',
+ '72':'Mammography',
+ '100':'Registry Examination and Career Preparation'
+};
 function componentOf(e){if(['Lecture','Lab','Clinical'].includes(e.component))return e.component;return e.kind==='block'||['Clinical','Internship'].includes(e.type)?'Clinical':e.type==='Lab'?'Lab':'Lecture'}
 function courseTitleOf(e){if(e.courseTitle)return e.courseTitle;let label=String(e.title||'').replace(/^DMI\s*[\w/]+\s*[–—-]\s*/i,'').replace(/^DMI\s*[\w/]+\s*·\s*/i,'').trim();if(label && !['Lecture','Lab','Clinical'].includes(label))return label;return COURSE_TITLES[String(e.code||'').toUpperCase()]||(['Lecture','Lab'].includes(e.type)?'':String(e.type||''))}
 function displayLabel(e){const number=String(e.code||'').trim();const title=courseTitleOf(e).trim();return number?'DMI '+number+(title?' - '+title:''):title||'Untitled course'}
