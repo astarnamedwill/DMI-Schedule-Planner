@@ -19,7 +19,34 @@
 .dashboard.cohorts-five section:nth-child(4){grid-column:1;grid-row:2}
 .dashboard.cohorts-five section:nth-child(5){grid-column:2;grid-row:2}
 @media(max-width:800px){.dashboard.cohorts-five{grid-template-columns:1fr}.dashboard.cohorts-five section:nth-child(4),.dashboard.cohorts-five section:nth-child(5){grid-column:auto;grid-row:auto}}
-</style></head><body><header class="top"><div class="logo"><div class="mark">X</div><div><h1>DMI Schedule Planner</h1><small>Radiologic Technology · John Adams Center</small></div></div><div class="actions"><button class="darkbutton" id="instBtn">Instructors</button><button class="darkbutton" id="expBtn">Export JSON</button><button class="darkbutton" id="impBtn">Import JSON</button><button class="primary" id="newBtn">+ Add class / block</button></div></header><main class="shell"><div class="toolbar"><div><h2 id="viewTitle">All Rooms Dashboard</h2><p>Drag classes between room calendars, days, or times. Click to edit details.</p></div><div class="filter"><label for="term">Term</label><select id="term" aria-label="Choose term"></select><button id="newTerm">+ New term</button><button id="renameTerm">Rename</button><label for="step">Grid</label><select id="step"><option value="30">30 minutes</option><option value="60">60 minutes</option></select></div></div><div class="tabs" id="tabs"></div><div class="summary"><span id="total"></span><button id="conflicts" class="conflictbar" title="Click to inspect scheduling conflicts"></button><span>Hours: 8:00 AM–8:00 PM · Monday–Friday · 47D permits 2 simultaneous uses</span></div><div id="dashboard" class="dashboard"></div><div class="gridwrap" id="singleWrap"><div id="planner" class="planner"></div></div><div class="legend" id="legend"></div><p class="foot">Scheduler data uses its own storage namespace to support future integration with Dose Badge Inventory. Changes save in this browser automatically. Export JSON to back up or move the schedule to another computer. The attached PDF has no instructor names and does not always specify exact class boundaries; seeded meeting times are a starting draft and should be reviewed. Cohort clinical/practicum blocks are separate from classroom reservations.</p></main><div class="dialogbg" id="overlay"><div class="modal" id="modal"></div></div><div class="toast" id="toast"></div><input type="file" id="file" accept="application/json,.json" hidden><script>
+
+/* Visual refinement: softer hierarchy, calm lines, and clean solid event cards. */
+:root{background:#f6f8fb;color:#233343}
+.top{background:#192b3b;padding:17px 25px}
+.mark{border-radius:9px}
+.shell{padding:22px 24px}
+.toolbar,.summary{border-color:#e7ecf1;box-shadow:0 2px 10px #21384c08}
+.toolbar{padding:17px 19px}
+.toolbar h2{font-size:19px;letter-spacing:-.3px}
+button{border-color:#d8e0e8}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid #6c96b6;outline-offset:2px}
+.tabs{gap:8px;margin:2px 0 15px}
+.tabs button{padding:10px 16px;border-radius:9px}
+.tabs button.active{background:#29475d;border-color:#29475d}
+.dashboard.rooms-dashboard,.dashboard.cohorts-five{gap:14px}
+.dashboard section{border-color:#e1e7ee;border-radius:13px;box-shadow:0 2px 12px #21384c0a}
+.dashboard section h3{background:#f5f8fb;color:#2b4154;border-bottom:1px solid #e5ebf1;font-weight:750;letter-spacing:.1px}
+.gridwrap{border-color:#e4eaf0}
+.dayhead,.timehead{background:#f5f7fa;color:#506476;border-bottom:1px solid #dfe6ed;font-weight:750}
+.time{color:#748698;border-right:1px solid #e8edf2;border-bottom:1px solid #dce4eb}
+.daycol{border-right:1px solid #e8edf2;background:repeating-linear-gradient(to bottom,#fff 0px,#fff 27px,#eef2f6 27px,#eef2f6 28px,#fff 28px,#fff 54px,#dce4eb 54px,#dce4eb 55px)}
+.event{border-radius:6px;box-shadow:0 1px 3px #182c4017;font-weight:500;color:#182b3a}
+.event .ename{font-weight:750}
+.event .meta{opacity:.9}
+.event:hover{outline:2px solid #607f97;box-shadow:0 2px 7px #182c4030}
+.event.conflict{outline:2px solid #c85252}
+.chip{border-color:#e2e9ef}
+</style></head><body><header class="top"><div class="logo"><div class="mark">X</div><div><h1>DMI Schedule Planner</h1><small>Radiologic Technology · John Adams Center</small></div></div><div class="actions"><button class="darkbutton" id="instBtn">Instructors</button><button class="darkbutton" id="expBtn">Export JSON</button><button class="darkbutton" id="impBtn">Import JSON</button><button class="primary" id="newBtn">+ Add class / block</button></div></header><main class="shell"><div class="toolbar"><div><h2 id="viewTitle">All Rooms Dashboard</h2><p>Drag classes between room calendars, days, or times. Click to edit details.</p></div><div class="filter"><label for="term">Term</label><select id="term" aria-label="Choose term"></select><button id="newTerm">+ New term</button><button id="renameTerm">Rename</button><label for="step">Grid</label><select id="step"><option value="30">30 minutes</option><option value="60">60 minutes</option></select></div></div><div class="tabs" id="tabs"></div><div class="summary"><span id="total"></span><button id="conflicts" class="conflictbar" title="Click to inspect scheduling conflicts"></button><span>Hours: 8:00 AM–9:00 PM · Monday–Friday · 47D permits 2 simultaneous uses</span></div><div id="dashboard" class="dashboard"></div><div class="gridwrap" id="singleWrap"><div id="planner" class="planner"></div></div><div class="legend" id="legend"></div><p class="foot">Scheduler data uses its own storage namespace to support future integration with Dose Badge Inventory. Changes save in this browser automatically. Export JSON to back up or move the schedule to another computer. The attached PDF has no instructor names and does not always specify exact class boundaries; seeded meeting times are a starting draft and should be reviewed. Cohort clinical/practicum blocks are separate from classroom reservations.</p></main><div class="dialogbg" id="overlay"><div class="modal" id="modal"></div></div><div class="toast" id="toast"></div><input type="file" id="file" accept="application/json,.json" hidden><script>
 const DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday'],ROOMS=['47A','47D','Other'],COHORTS=['DMI 62/64','DMI 66','Intern','1st Semester','2nd Semester'],VIEWS=["All Rooms","All Cohorts"],KEY='ccsf_dmi_schedule_v1',PX=55;
 const COURSE_COHORTS={'50A':'1st Semester','52':'1st Semester','49':'1st Semester','51A':'2nd Semester','51B':'2nd Semester','50B':'2nd Semester'};
 const COLORS=['#2c92b9','#28bf95','#b17de5','#ed79bc','#edb448','#ed6f73','#679bbf'];
